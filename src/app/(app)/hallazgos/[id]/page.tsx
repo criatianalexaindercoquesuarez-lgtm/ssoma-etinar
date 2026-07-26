@@ -69,25 +69,42 @@ export default function DetalleHallazgoPage() {
     const { data: perfil } = await supabase.from('perfiles').select('*').eq('id', user!.id).single();
     const cumplimientoFinal = estado === 'cerrado' ? 100 : pct;
 
-    await supabase
-      .from('hallazgos')
-      .update({ cumplimiento: cumplimientoFinal, estado, actualizado_en: new Date().toISOString() })
-      .eq('id', h.id);
-
+    // 1) Subir evidencia PRIMERO. Si falla y se requiere para cerrar, se detiene
+    //    todo antes de tocar el estado del hallazgo — así nunca queda "Cerrado"
+    //    sin evidencia real guardada en la base de datos.
+    let fotosSubidasOk = true;
     for (const foto of nuevasFotos) {
       const path = `${h.id}/${Date.now()}-${foto.name}`;
       const { error: upErr } = await supabase.storage.from('evidencias').upload(path, foto);
-      if (!upErr) {
-        await supabase.from('evidencias').insert({
-          hallazgo_id: h.id,
-          storage_path: path,
-          tipo: estado === 'cerrado' ? 'cierre' : 'avance',
-          subido_por: perfil.id,
-        });
-      }
+      if (upErr) { fotosSubidasOk = false; setError('Error al subir foto: ' + upErr.message); break; }
+      const { error: evErr } = await supabase.from('evidencias').insert({
+        hallazgo_id: h.id,
+        storage_path: path,
+        tipo: estado === 'cerrado' ? 'cierre' : 'avance',
+        subido_por: perfil.id,
+      });
+      if (evErr) { fotosSubidasOk = false; setError('Error al registrar evidencia: ' + evErr.message); break; }
     }
 
-    await supabase.from('auditoria').insert({
+    if (!fotosSubidasOk) {
+      setSaving(false);
+      return; // no se toca el hallazgo ni la auditoría si la evidencia falló
+    }
+
+    // 2) Solo si la evidencia (cuando aplica) se guardó bien, se actualiza el hallazgo.
+    const { error: updErr } = await supabase
+      .from('hallazgos')
+      .update({ cumplimiento: cumplimientoFinal, estado, actualizado_en: new Date().toISOString() })
+      .eq('id', h.id);
+    if (updErr) {
+      setError('Error al actualizar el hallazgo: ' + updErr.message);
+      setSaving(false);
+      return;
+    }
+
+    // 3) Auditoría (append-only). Si esto falla, se avisa pero no se revierte
+    //    el estado — se registra el error para revisión.
+    const { error: audErr } = await supabase.from('auditoria').insert({
       hallazgo_id: h.id,
       accion: estado === 'cerrado' ? 'cerrar' : 'avance',
       usuario_id: perfil.id,
@@ -95,11 +112,22 @@ export default function DetalleHallazgoPage() {
       cumplimiento_snapshot: cumplimientoFinal,
       estado_snapshot: estado,
     });
+    if (audErr) {
+      setError('El hallazgo se guardó, pero el historial de auditoría falló: ' + audErr.message);
+      setSaving(false);
+      return;
+    }
 
     setSaving(false);
     setComentario('');
     setNuevasFotos([]);
-    cargar();
+    await cargar();
+
+    // Redirección automática: si quedó cerrado, vuelve a la lista de hallazgos
+    // en vez de dejar al usuario parado en el detalle.
+    if (estado === 'cerrado') {
+      router.push('/hallazgos');
+    }
   }
 
   if (!h) return <p className="text-sm text-[#5F5E5A] text-center py-10">Cargando...</p>;
