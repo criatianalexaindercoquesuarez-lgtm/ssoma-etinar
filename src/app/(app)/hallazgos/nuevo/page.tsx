@@ -103,12 +103,13 @@ export default function NuevoHallazgoPage() {
       estado_snapshot: 'abierto',
     });
 
-    // Notificación
-    await supabase.from('notificaciones').insert({
-      hallazgo_id: nuevo.id,
-      destinatario_id: responsable,
-      canal: 'email',
-    });
+    // Notificación real por correo y WhatsApp (registra éxito o fallo real,
+    // no un estado 'enviado' inventado como antes).
+    await fetch('/api/notificar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ hallazgoId: nuevo.id, canal: 'ambos' }),
+    }).catch(() => {});
 
     setSaving(false);
     router.push(`/hallazgos/${nuevo.id}`);

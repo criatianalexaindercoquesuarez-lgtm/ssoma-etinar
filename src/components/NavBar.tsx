@@ -6,6 +6,8 @@ import { createClient } from '@/lib/supabase/client';
 const ITEMS = [
   { href: '/dashboard', label: 'Inicio' },
   { href: '/hallazgos', label: 'Hallazgos' },
+  { href: '/indicadores', label: 'Indicadores' },
+  { href: '/notificaciones', label: 'Alertas' },
   { href: '/usuarios', label: 'Usuarios', adminOnly: true },
 ];
 

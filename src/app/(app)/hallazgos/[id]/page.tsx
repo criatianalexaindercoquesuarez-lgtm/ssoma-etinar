@@ -18,6 +18,26 @@ export default function DetalleHallazgoPage() {
   const [nuevasFotos, setNuevasFotos] = useState<File[]>([]);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [notificando, setNotificando] = useState(false);
+  const [notifResultado, setNotifResultado] = useState<{ canal: string; ok: boolean; detalle: string }[] | null>(null);
+
+  async function notificar() {
+    if (!h) return;
+    setNotificando(true);
+    setNotifResultado(null);
+    try {
+      const res = await fetch('/api/notificar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ hallazgoId: h.id, canal: 'ambos' }),
+      });
+      const data = await res.json();
+      setNotifResultado(data.resultados || []);
+    } catch {
+      setNotifResultado([{ canal: 'email', ok: false, detalle: 'No se pudo conectar con el servidor' }]);
+    }
+    setNotificando(false);
+  }
 
   const cargar = useCallback(async () => {
     const { data: hallazgo } = await supabase.from('hallazgos').select('*').eq('id', id).single();
@@ -138,7 +158,12 @@ export default function DetalleHallazgoPage() {
     <div className="space-y-3">
       <div className="flex justify-between items-center">
         <h2 className="text-base font-semibold">{h.codigo}</h2>
-        <button onClick={() => router.back()} className="text-sm text-[#5F5E5A]">✕</button>
+        <div className="flex gap-2 items-center">
+          <a href={`/hallazgos/${h.id}/ficha`} target="_blank" className="text-xs bg-[#F1EFE8] px-2.5 py-1.5 rounded-lg text-[#5F5E5A]">
+            ⬇ PDF
+          </a>
+          <button onClick={() => router.back()} className="text-sm text-[#5F5E5A]">✕</button>
+        </div>
       </div>
 
       <div className="flex gap-1.5 flex-wrap text-xs">
@@ -183,6 +208,26 @@ export default function DetalleHallazgoPage() {
             </div>
           ))}
         </div>
+      </Card>
+
+      <Card>
+        <SectionTitle>Notificar responsable</SectionTitle>
+        <button
+          onClick={notificar}
+          disabled={notificando}
+          className="w-full mt-2 bg-[#0C447C] text-white rounded-lg py-2.5 text-sm font-medium disabled:opacity-60"
+        >
+          {notificando ? 'Enviando...' : '🔔 Notificar por correo y WhatsApp'}
+        </button>
+        {notifResultado && (
+          <div className="mt-2 space-y-1">
+            {notifResultado.map((r: { canal: string; ok: boolean; detalle: string }, i: number) => (
+              <p key={i} className={`text-xs ${r.ok ? 'text-[#3B6D11]' : 'text-[#A32D2D]'}`}>
+                {r.canal === 'email' ? '✉️' : '💬'} {r.canal}: {r.ok ? 'Enviado' : r.detalle}
+              </p>
+            ))}
+          </div>
+        )}
       </Card>
 
       <Card>
