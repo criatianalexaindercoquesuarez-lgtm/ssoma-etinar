@@ -31,12 +31,15 @@ export async function POST(req: Request) {
     const resultados: ResultadoEnvio[] = [];
 
     // ENVÍO POR EMAIL USANDO RESEND
-    if ((canal === 'email' || canal === 'ambos') && destinatario.email) {
-      const apiKey = process.env.SENDGRID_API_KEY;
+    if (canal === 'email' || canal === 'ambos') {
+      const apiKey = process.env.RESEND_API_KEY || process.env.SENDGRID_API_KEY;
       const fromEmail = process.env.SENDGRID_FROM_EMAIL || 'onboarding@resend.dev';
 
+      // Forzamos el correo de prueba para evitar el error 403 de Resend
+      const targetEmail = 'cristianalexaindercoquesuarez@gmail.com';
+
       if (!apiKey) {
-        resultados.push({ canal: 'email', ok: false, detalle: 'SENDGRID_API_KEY no configurada' });
+        resultados.push({ canal: 'email', ok: false, detalle: 'API Key no configurada' });
       } else {
         const mensajeHtml = `
           <div style="font-family: sans-serif; padding: 20px;">
@@ -56,7 +59,7 @@ export async function POST(req: Request) {
           },
           body: JSON.stringify({
             from: fromEmail,
-            to: [destinatario.email],
+            to: [targetEmail],
             subject: `Notificación SSOMA: ${h.titulo || 'Nuevo hallazgo asignado'}`,
             html: mensajeHtml,
           }),
@@ -65,7 +68,7 @@ export async function POST(req: Request) {
         const resData = await resEmail.json();
 
         if (resEmail.ok) {
-          resultados.push({ canal: 'email', ok: true, detalle: `Correo enviado con éxito a ${destinatario.email}` });
+          resultados.push({ canal: 'email', ok: true, detalle: `Correo enviado con éxito a ${targetEmail}` });
         } else {
           resultados.push({ canal: 'email', ok: false, detalle: `Resend respondió: ${JSON.stringify(resData)}` });
         }
