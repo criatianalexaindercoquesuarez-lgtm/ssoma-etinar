@@ -1,32 +1,37 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
-// Esta ruta corre en el servidor: las API keys de Resend/Twilio
-// Configúralas en Netlify -> Site settings -> Environment variables:
-// SENDGRID_API_KEY (aquí colocas tu clave de Resend re_...), SENDGRID_FROM_EMAIL (onboarding@resend.dev)
+type ResultadoEnvio = {
+  canal: string;
+  ok: boolean;
+  detalle: string;
+};
 
-export async function POST(req: NextRequest) {
-  const { hallazgoId, canal } = await req.json(); // canal: 'email' | 'whatsapp' | 'ambos'
+export async function POST(req: Request) {
+  try {
+    const body = await req.json();
+    const hallazgoId = body.hallazgoId;
+    const canal = body.canal;
 
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
 
-  const { data: h } = await supabase.from('hallazgos').select('*').eq('id', hallazgoId).single();
-  if (!h) return NextResponse.json({ error: 'Hallazgo no encontrado' }, { status: 404 });
+    const { data: h } = await supabase.from('hallazgos').select('*').eq('id', hallazgoId).single();
+    if (!h) return NextResponse.json({ error: 'Hallazgo no encontrado' }, { status: 404 });
 
-  const { data: destinatario } = await supabase
-    .from('perfiles')
-    .select('*')
-    .eq('id', h.responsable_id)
-    .single();
-  if (!destinatario) return NextResponse.json({ error: 'Responsable no encontrado' }, { status: 404 });
+    const { data: destinatario } = await supabase
+      .from('perfiles')
+      .select('*')
+      .eq('id', h.responsable_id)
+      .single();
 
-  const resultados: { canal: string; ok: boolean; detalle: string }[] = [];
+    if (!destinatario) return NextResponse.json({ error: 'Responsable no encontrado' }, { status: 404 });
 
-  // ENVÍO POR EMAIL USANDO RESEND
-  if ((canal === 'email' || canal === 'ambos') && destinatario.email) {
-    try {
+    const resultados: ResultadoEnvio[] = [];
+
+    // ENVÍO POR EMAIL USANDO RESEND
+    if ((canal === 'email' || canal === 'ambos') && destinatario.email) {
       const apiKey = process.env.SENDGRID_API_KEY;
       const fromEmail = process.env.SENDGRID_FROM_EMAIL || 'onboarding@resend.dev';
 
@@ -65,10 +70,11 @@ export async function POST(req: NextRequest) {
           resultados.push({ canal: 'email', ok: false, detalle: `Resend respondió: ${JSON.stringify(resData)}` });
         }
       }
-    } catch (err: any) {
-      resultados.push({ canal: 'email', ok: false, detalle: `Error en servidor: ${err.message}` });
     }
-  }
 
-  return NextResponse.json({ ok: true, resultados });
+    return NextResponse.json({ ok: true, resultados });
+  } catch (err: unknown) {
+    const mensaje = err instanceof Error ? err.message : String(err);
+    return NextResponse.json({ error: mensaje }, { status: 500 });
+  }
 }
