@@ -7,7 +7,8 @@ export default async function ReportePage() {
   const { data: hallazgos } = await supabase.from('hallazgos').select('*').eq('eliminado', false).order('creado_en');
   const { data: perfiles } = await supabase.from('perfiles').select('id,nombre');
   const { data: evidencias } = await supabase.from('evidencias').select('hallazgo_id').eq('eliminado', false);
-  const { data: proyectoRow } = await supabase.from('proyectos').select('nombre').limit(1).single();
+  const { data: proyectos } = await supabase.from('proyectos').select('id,nombre');
+  const proyectoNombre = (id: string) => proyectos?.find((p) => p.id === id)?.nombre || '—';
 
   const hs = hallazgos || [];
   const cerrados = hs.filter((h) => h.estado === 'cerrado').length;
@@ -18,7 +19,7 @@ export default async function ReportePage() {
     <div style={{ fontFamily: 'Arial, sans-serif', padding: 24, fontSize: 11, color: '#222' }}>
       <AutoPrint />
       <div style={{ background: '#185FA5', color: '#fff', padding: 16, borderRadius: 8, marginBottom: 14 }}>
-        <h1 style={{ fontSize: 16, margin: 0 }}>Informe de Hallazgos — {proyectoRow?.nombre || 'Proyecto'}</h1>
+        <h1 style={{ fontSize: 16, margin: 0 }}>Informe de Hallazgos — Todas las obras</h1>
         <div style={{ fontSize: 11, marginTop: 4 }}>
           Generado: {new Date().toLocaleDateString('es-EC')} · Total: {hs.length} · Cerrados: {cerrados} (
           {Math.round((cerrados / (hs.length || 1)) * 100)}%)
@@ -27,7 +28,7 @@ export default async function ReportePage() {
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
         <thead>
           <tr style={{ background: '#185FA5', color: '#fff' }}>
-            {['Código', 'Área', 'Hallazgo', 'Criticidad', 'Responsable', 'Avance', 'Estado', 'Normativa', 'Evidencia'].map((h) => (
+            {['Código', 'Obra', 'Área', 'Hallazgo', 'Criticidad', 'Responsable', 'Avance', 'Estado', 'Normativa', 'Evidencia'].map((h) => (
               <th key={h} style={{ padding: 6, textAlign: 'left' }}>{h}</th>
             ))}
           </tr>
@@ -40,6 +41,7 @@ export default async function ReportePage() {
             return (
               <tr key={h.id} style={{ borderBottom: '1px solid #eee' }}>
                 <td style={{ padding: '5px 6px', fontWeight: 700 }}>{h.codigo}</td>
+                <td style={{ padding: '5px 6px', fontSize: 10 }}>{proyectoNombre(h.proyecto_id)}</td>
                 <td style={{ padding: '5px 6px' }}>{h.area}</td>
                 <td style={{ padding: '5px 6px', fontSize: 10 }}>{h.descripcion.slice(0, 80)}</td>
                 <td style={{ padding: '5px 6px', color: colorMap[h.criticidad], fontWeight: 700 }}>{h.criticidad}</td>

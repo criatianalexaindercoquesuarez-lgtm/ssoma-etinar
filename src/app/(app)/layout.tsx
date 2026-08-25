@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import NavBar from '@/components/NavBar';
+import { ROL_LABEL } from '@/lib/types';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -18,7 +19,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <header className="sticky top-0 z-40 bg-[#185FA5] text-white px-4 py-3.5 flex items-center justify-between shadow">
         <div>
           <h1 className="text-base font-semibold">SSOMA · ETINAR</h1>
-          <p className="text-[11px] opacity-85">{perfil?.nombre || user.email}</p>
+          <p className="text-[11px] opacity-85">{perfil?.nombre || user.email} · {perfil?.rol ? ROL_LABEL[perfil.rol as keyof typeof ROL_LABEL] : ''}</p>
         </div>
         <span className="text-[10px] bg-white/20 px-2 py-1 rounded-full">
           {perfil?.rol || '—'}

@@ -10,6 +10,7 @@ export default function DetalleHallazgoPage() {
   const supabase = createClient();
 
   const [h, setH] = useState<Hallazgo | null>(null);
+  const [proyectoNombre, setProyectoNombre] = useState('');
   const [fotos, setFotos] = useState<{ id: string; url: string }[]>([]);
   const [auditoria, setAuditoria] = useState<AuditoriaItem[]>([]);
   const [pct, setPct] = useState(0);
@@ -45,6 +46,9 @@ export default function DetalleHallazgoPage() {
     setH(hallazgo);
     setPct(hallazgo.cumplimiento);
     setEstado(hallazgo.estado);
+
+    const { data: proyecto } = await supabase.from('proyectos').select('nombre').eq('id', hallazgo.proyecto_id).single();
+    setProyectoNombre(proyecto?.nombre || '—');
 
     const { data: evidencias } = await supabase.from('evidencias').select('*').eq('hallazgo_id', id).eq('eliminado', false);
     setFotos(
@@ -180,6 +184,7 @@ export default function DetalleHallazgoPage() {
       </Card>
 
       <Card>
+        <Row label="Obra" value={proyectoNombre} />
         <Row label="Área" value={h.area} />
         <Row label="Cierre límite" value={new Date(h.fecha_limite).toLocaleDateString('es-EC')} />
         <Row label="Causa raíz" value={h.causas.map((c) => CAUSAS.find((x) => x.id === c)?.label).join(', ') || '—'} />

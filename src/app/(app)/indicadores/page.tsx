@@ -7,6 +7,7 @@ export default async function IndicadoresPage() {
   const { data: hallazgos } = await supabase.from('hallazgos').select('*').eq('eliminado', false);
   const { data: evidencias } = await supabase.from('evidencias').select('hallazgo_id').eq('eliminado', false);
   const { data: perfiles } = await supabase.from('perfiles').select('id,nombre');
+  const { data: proyectos } = await supabase.from('proyectos').select('id,nombre');
 
   const hs = hallazgos || [];
   const total = hs.length || 1;
@@ -28,6 +29,13 @@ export default async function IndicadoresPage() {
   const porArea: Record<string, number> = {};
   hs.forEach((h) => { porArea[h.area] = (porArea[h.area] || 0) + 1; });
   const maxArea = Math.max(1, ...Object.values(porArea));
+
+  const porObra: Record<string, number> = {};
+  hs.forEach((h) => {
+    const nombre = proyectos?.find((p) => p.id === h.proyecto_id)?.nombre || 'Sin obra';
+    porObra[nombre] = (porObra[nombre] || 0) + 1;
+  });
+  const maxObra = Math.max(1, ...Object.values(porObra));
 
   const porResp: Record<string, number> = {};
   hs.forEach((h) => {
@@ -57,6 +65,13 @@ export default async function IndicadoresPage() {
         <Bar label="Crítico" value={crit} max={total} color="#E24B4A" />
         <Bar label="Moderado" value={mod} max={total} color="#EF9F27" />
         <Bar label="Bajo" value={baj} max={total} color="#639922" />
+      </Card>
+
+      <Card title="Hallazgos por obra">
+        {Object.entries(porObra).sort((a, b) => b[1] - a[1]).map(([nombre, n]) => (
+          <Bar key={nombre} label={nombre} value={n} max={maxObra} color="#0C447C" wide />
+        ))}
+        {totalReal === 0 && <Empty />}
       </Card>
 
       <div className="grid grid-cols-2 gap-2.5">

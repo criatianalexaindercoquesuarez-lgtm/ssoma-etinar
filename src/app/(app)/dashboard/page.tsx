@@ -8,6 +8,8 @@ export default async function DashboardPage() {
     .select('*')
     .eq('eliminado', false)
     .order('creado_en', { ascending: false });
+  const { data: proyectos } = await supabase.from('proyectos').select('id,nombre');
+  const proyectoNombre = (id: string) => proyectos?.find((p) => p.id === id)?.nombre || '—';
 
   const hs = hallazgos || [];
   const total = hs.length;
@@ -55,6 +57,7 @@ export default async function DashboardPage() {
               <span className="font-bold text-[#185FA5]">{h.codigo}</span>
               <span className="text-[#5F5E5A]">{h.area}</span>
             </div>
+            <p className="text-[10px] text-[#0C447C] font-semibold mb-1">🏗️ {proyectoNombre(h.proyecto_id)}</p>
             <p className="text-sm line-clamp-2">{h.descripcion}</p>
             <div className="text-[11px] text-[#5F5E5A] mt-1.5">
               Cierre: {new Date(h.fecha_limite).toLocaleDateString('es-EC')} · {h.cumplimiento}%
