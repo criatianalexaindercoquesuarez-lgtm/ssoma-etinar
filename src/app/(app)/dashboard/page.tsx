@@ -1,79 +1,52 @@
-import { createClient } from '@/lib/supabase/server';
 import Link from 'next/link';
+import { createClient } from '@/lib/supabase/server';
+import { calcularIndicadores, obtenerMatriz } from '@/lib/matriz';
+import HallazgoCard from '@/components/HallazgoCard';
+import { Kpi } from '@/components/Barras';
+
+export const dynamic = 'force-dynamic';
+
+const ORDEN: Record<string, number> = { critica: 0, alta: 1, media: 2, baja: 3 };
 
 export default async function DashboardPage() {
   const supabase = await createClient();
-  const { data: hallazgos } = await supabase
-    .from('hallazgos')
-    .select('*')
-    .eq('eliminado', false)
-    .order('creado_en', { ascending: false });
-  const { data: proyectos } = await supabase.from('proyectos').select('id,nombre');
-  const proyectoNombre = (id: string) => proyectos?.find((p) => p.id === id)?.nombre || '—';
-
-  const hs = hallazgos || [];
-  const total = hs.length;
-  const abiertos = hs.filter((h) => h.estado === 'abierto').length;
-  const enProceso = hs.filter((h) => h.estado === 'en_proceso').length;
-  const cerrados = hs.filter((h) => h.estado === 'cerrado').length;
-
-  const activos = hs
-    .filter((h) => h.estado !== 'cerrado')
-    .sort((a, b) => {
-      const order: Record<string, number> = { critico: 0, moderado: 1, bajo: 2 };
-      return order[a.criticidad] - order[b.criticidad];
-    })
-    .slice(0, 8);
-
-  const criticidadColor: Record<string, string> = {
-    critico: 'border-l-[#E24B4A]',
-    moderado: 'border-l-[#EF9F27]',
-    bajo: 'border-l-[#639922]',
-  };
+  const { data: { user } } = await supabase.auth.getUser();
+  const hs = await obtenerMatriz(supabase, {});
+  const ind = calcularIndicadores(hs, 0);
+  const abiertos = hs.filter((h) => h.estado !== 'cerrado');
+  const mios = abiertos.filter((h) => h.responsable_id === user?.id || h.verificador_id === user?.id);
+  const porRevisar = abiertos.filter((h) => h.estado === 'en_verificacion');
+  const activos = [...abiertos]
+    .sort((a, b) => (a.estado_efectivo === 'vencido' ? -1 : 0) - (b.estado_efectivo === 'vencido' ? -1 : 0)
+      || (ORDEN[a.prioridad || 'baja'] - ORDEN[b.prioridad || 'baja']))
+    .slice(0, 10);
 
   return (
-    <div>
-      <div className="grid grid-cols-2 gap-2.5 mb-4">
-        <Metric label="Total hallazgos" value={total} color="text-[#0C447C]" />
-        <Metric label="Abiertos" value={abiertos} color="text-[#A32D2D]" />
-        <Metric label="En proceso" value={enProceso} color="text-[#854F0B]" />
-        <Metric label="Cerrados" value={cerrados} color="text-[#3B6D11]" />
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+        <Kpi label="Total hallazgos" value={ind.totalHallazgos} />
+        <Kpi label="Pendientes / en proceso" value={ind.porEstado.pendiente + ind.porEstado.en_proceso} color="#854F0B" />
+        <Kpi label="En verificación SST" value={ind.porEstado.en_verificacion} color="#185FA5" />
+        <Kpi label="Vencidos" value={ind.porEstado.vencido} color="#A32D2D" />
+        <Kpi label="Cerrados" value={`${ind.cerrados} · ${ind.pctCumplimiento}%`} color="#3B6D11" />
       </div>
-
-      <h2 className="text-xs font-semibold text-[#5F5E5A] uppercase tracking-wide mt-5 mb-2">
-        Hallazgos activos
-      </h2>
-      {activos.length === 0 && (
-        <p className="text-sm text-[#5F5E5A] text-center py-8">✅ No hay hallazgos activos</p>
-      )}
-      <div className="space-y-2">
-        {activos.map((h) => (
-          <Link
-            key={h.id}
-            href={`/hallazgos/${h.id}`}
-            className={`block bg-white border border-[#E3E1D9] border-l-4 ${criticidadColor[h.criticidad]} rounded-xl p-3`}
-          >
-            <div className="flex justify-between text-xs mb-1">
-              <span className="font-bold text-[#185FA5]">{h.codigo}</span>
-              <span className="text-[#5F5E5A]">{h.area}</span>
-            </div>
-            <p className="text-[10px] text-[#0C447C] font-semibold mb-1">🏗️ {proyectoNombre(h.proyecto_id)}</p>
-            <p className="text-sm line-clamp-2">{h.descripcion}</p>
-            <div className="text-[11px] text-[#5F5E5A] mt-1.5">
-              Cierre: {new Date(h.fecha_limite).toLocaleDateString('es-EC')} · {h.cumplimiento}%
-            </div>
-          </Link>
-        ))}
+      <div className="flex gap-2">
+        <Link href="/inspecciones/nueva" className="flex-1 text-center bg-[#185FA5] text-white text-sm font-medium py-2.5 rounded-lg">+ Nueva inspección</Link>
+        <Link href="/hallazgos/nuevo" className="flex-1 text-center bg-white border border-[#185FA5] text-[#185FA5] text-sm font-medium py-2.5 rounded-lg">+ Hallazgo</Link>
       </div>
+      {mios.length > 0 && <Seccion titulo={`Asignados a mí (${mios.length})`} items={mios} />}
+      {porRevisar.length > 0 && <Seccion titulo={`Evidencias por verificar (${porRevisar.length})`} items={porRevisar} />}
+      <Seccion titulo="Hallazgos activos prioritarios" items={activos} vacio="✅ No hay hallazgos activos" />
     </div>
   );
 }
 
-function Metric({ label, value, color }: { label: string; value: number; color: string }) {
+function Seccion({ titulo, items, vacio }: { titulo: string; items: Parameters<typeof HallazgoCard>[0]['h'][]; vacio?: string }) {
   return (
-    <div className="bg-white border border-[#E3E1D9] rounded-xl p-3">
-      <div className="text-[11px] text-[#5F5E5A] mb-1">{label}</div>
-      <div className={`text-2xl font-bold ${color}`}>{value}</div>
+    <div>
+      <h2 className="text-xs font-semibold text-[#5F5E5A] uppercase tracking-wide mb-2">{titulo}</h2>
+      {items.length === 0 && vacio && <p className="text-sm text-[#5F5E5A] text-center py-6">{vacio}</p>}
+      <div className="grid sm:grid-cols-2 gap-2">{items.map((h) => <HallazgoCard key={h.id} h={h} />)}</div>
     </div>
   );
 }

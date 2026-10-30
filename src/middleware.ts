@@ -41,5 +41,6 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|manifest.json|sw.js|icons).*)'],
+  // api/cron queda fuera: lo invoca la función programada de Netlify (se protege con CRON_SECRET).
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|manifest.json|sw.js|icons|logo-etinar.png|api/cron).*)'],
 };
