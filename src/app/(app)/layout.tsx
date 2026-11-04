@@ -15,12 +15,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <div className="min-h-screen bg-[#F5F5F3] pb-20 text-[#222]">
       <header className="sticky top-0 z-40 bg-[#185FA5] text-white px-4 py-3 flex items-center justify-between shadow">
-        <div>
+        <a href="/cuenta" title="Mi cuenta: cambiar contraseña">
           <h1 className="text-base font-semibold">ETINAR · Inspecciones SST</h1>
           <p className="text-[11px] opacity-85">
             {perfil?.nombre || user.email} · {perfil?.cargo || (perfil?.rol ? ROL_LABEL[perfil.rol as RolUsuario] : '')}
+            {' '}· <span className="underline">Mi cuenta</span>
           </p>
-        </div>
+        </a>
         <a href="/notificaciones" className="relative text-xl" aria-label="Notificaciones">
           🔔
           {!!sinLeer && (
