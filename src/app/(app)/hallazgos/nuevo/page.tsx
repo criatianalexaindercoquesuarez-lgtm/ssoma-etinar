@@ -1,7 +1,9 @@
+import { soloPersonalInterno } from '@/lib/acceso';
 import { createClient } from '@/lib/supabase/server';
 import NuevoHallazgoForm from './NuevoHallazgoForm';
 
 export default async function NuevoHallazgoPage({ searchParams }: { searchParams: { inspeccion?: string } }) {
+  await soloPersonalInterno();
   const supabase = await createClient();
   const { data: inspecciones } = await supabase.from('inspecciones')
     .select('id,codigo,fecha_hora,area,ubicacion,nivel,frente,contratista,proyecto_id,proyectos(nombre)')

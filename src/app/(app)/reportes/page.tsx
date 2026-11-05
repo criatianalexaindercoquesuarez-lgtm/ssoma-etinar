@@ -1,3 +1,4 @@
+import { soloPersonalInterno } from '@/lib/acceso';
 import { createClient } from '@/lib/supabase/server';
 import { calcularIndicadores, contarInspecciones, filtrosAQuery, hoyEC, obtenerMatriz, rangoPeriodo } from '@/lib/matriz';
 import { PRIORIDAD_COLOR, PRIORIDAD_LABEL, type Prioridad } from '@/lib/types';
@@ -7,6 +8,7 @@ import { Barras, Kpi } from '@/components/Barras';
 export const dynamic = 'force-dynamic';
 
 export default async function ReportesPage({ searchParams }: { searchParams: { periodo?: string; fecha?: string; obra?: string } }) {
+  await soloPersonalInterno();
   const supabase = await createClient();
   const periodo = (searchParams.periodo === 'mes' ? 'mes' : 'semana') as 'semana' | 'mes';
   const fecha = searchParams.fecha || hoyEC();

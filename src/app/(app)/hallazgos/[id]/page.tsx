@@ -1,7 +1,7 @@
 import { notFound, redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import {
-  ACCION_LABEL, CAUSAS, FIRMA_LABEL, NORMATIVAS, TIPO_DESVIACION, fmtFecha, fmtFechaHora,
+  ACCION_LABEL, CAUSAS, esRestringido, FIRMA_LABEL, NORMATIVAS, TIPO_DESVIACION, fmtFecha, fmtFechaHora,
   type Evidencia, type Firma, type HallazgoVista, type Perfil,
 } from '@/lib/types';
 import { factorLabel, NIVEL_RIESGO_INFO } from '@/lib/gtc45';
@@ -152,7 +152,7 @@ export default async function DetalleHallazgo({ params, searchParams }: { params
         </div>
       </Card>
 
-      <Card>
+      {!esRestringido(yo.rol) && <Card>
         <SectionTitle>Historial de notificaciones</SectionTitle>
         {(notifs || []).length === 0 && <p className="text-xs text-[#5F5E5A]">Sin notificaciones enviadas.</p>}
         <div className="space-y-1">
@@ -166,7 +166,7 @@ export default async function DetalleHallazgo({ params, searchParams }: { params
             );
           })}
         </div>
-      </Card>
+      </Card>}
     </div>
   );
 }

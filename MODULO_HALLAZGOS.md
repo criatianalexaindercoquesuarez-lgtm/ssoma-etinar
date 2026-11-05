@@ -13,8 +13,8 @@
    |---|---|
    | Administrador / Coordinador SST | Todas las obras, aprobar o rechazar cierres, invitar usuarios |
    | Técnico SSO / Inspector | Registrar inspecciones y hallazgos, verificar cierres |
-   | Jefe de Obra / Residente | Su obra: firmar recepción, cargar evidencia, firmar ejecución |
-   | Contratista | Solo los hallazgos que se le asignan |
+   | Jefe de Obra / Técnico SSO | Todos los hallazgos de su obra; firmar recepción y ejecución |
+   | Residente / Contratista / Bodeguero | **Solo las observaciones que se le asignan** (con su obra): firmar recepción, cargar evidencia. No ve la matriz, inspecciones ni reportes (migración 003) |
    | Director / Auditor | Consulta de todas las obras |
 5. **Obras** — registrar el **código de proyecto** (p. ej. `EDN`): se usa en los códigos `INS-EDN-2026-001` y `H-EDN-0001`.
 6. **Logo** (opcional) — subir `public/logo-etinar.png` para que aparezca en el encabezado de los PDF.

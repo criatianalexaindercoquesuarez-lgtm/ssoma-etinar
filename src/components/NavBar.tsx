@@ -2,12 +2,20 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { esRestringido } from '@/lib/types';
+
+// Responsable externo (residente, contratista): solo sus observaciones y alertas
+const ITEMS_RESPONSABLE = [
+  { href: '/dashboard', label: 'Mis observaciones', icon: '📋' },
+  { href: '/notificaciones', label: 'Alertas', icon: '🔔' },
+];
 
 const ITEMS = [
   { href: '/dashboard', label: 'Inicio', icon: '🏠' },
   { href: '/inspecciones', label: 'Inspecciones', icon: '📋' },
   { href: '/hallazgos', label: 'Matriz', icon: '⚠️' },
   { href: '/reportes', label: 'Reportes', icon: '📊' },
+  { href: '/obras', label: 'Obras', icon: '🏗️', roles: ['admin', 'coordinador_sst', 'director'] },
   { href: '/usuarios', label: 'Usuarios', icon: '👥', roles: ['admin', 'coordinador_sst', 'director'] },
 ];
 
@@ -24,7 +32,7 @@ export default function NavBar({ rol }: { rol?: string }) {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#E3E1D9] flex z-40 print:hidden">
-      {ITEMS.filter((i) => !i.roles || (rol && i.roles.includes(rol))).map((item) => (
+      {(esRestringido(rol) ? ITEMS_RESPONSABLE : ITEMS.filter((i) => !i.roles || (rol && i.roles.includes(rol)))).map((item) => (
         <Link
           key={item.href}
           href={item.href}

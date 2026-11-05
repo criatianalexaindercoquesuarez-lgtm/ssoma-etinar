@@ -1,3 +1,4 @@
+import { soloPersonalInterno } from '@/lib/acceso';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { leerFiltros, obtenerMatriz, filtrosAQuery, calcularIndicadores } from '@/lib/matriz';
@@ -7,6 +8,7 @@ import HallazgoCard from '@/components/HallazgoCard';
 export const dynamic = 'force-dynamic';
 
 export default async function MatrizPage({ searchParams }: { searchParams: Record<string, string> }) {
+  await soloPersonalInterno();
   const supabase = await createClient();
   const f = leerFiltros(searchParams);
   const hs = await obtenerMatriz(supabase, f);

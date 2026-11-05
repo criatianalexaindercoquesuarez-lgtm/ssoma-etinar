@@ -249,3 +249,10 @@ export const fmtFecha = (d?: string | null) =>
   d ? new Date(d.length === 10 ? d + 'T12:00:00' : d).toLocaleDateString('es-EC', { timeZone: 'America/Guayaquil' }) : '—';
 export const fmtFechaHora = (d?: string | null) =>
   d ? new Date(d).toLocaleString('es-EC', { timeZone: 'America/Guayaquil', dateStyle: 'short', timeStyle: 'short' }) : '—';
+
+/**
+ * Roles que solo ven las observaciones que se les asignan (y su obra): no ven la matriz
+ * completa, inspecciones ni reportes. La base de datos aplica la misma regla (migración 003).
+ */
+export const ROLES_RESTRINGIDOS: RolUsuario[] = ['residente', 'contratista', 'bodeguero'];
+export const esRestringido = (rol?: string | null) => !!rol && ROLES_RESTRINGIDOS.includes(rol as RolUsuario);

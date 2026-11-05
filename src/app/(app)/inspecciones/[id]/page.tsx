@@ -1,3 +1,4 @@
+import { soloPersonalInterno } from '@/lib/acceso';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
@@ -8,6 +9,7 @@ import { Card, Row, SectionTitle } from '@/components/ui';
 import HallazgoCard from '@/components/HallazgoCard';
 
 export default async function InspeccionDetalle({ params }: { params: { id: string } }) {
+  await soloPersonalInterno();
   const supabase = await createClient();
   const insp = await obtenerInspeccion(supabase, params.id);
   if (!insp) notFound();

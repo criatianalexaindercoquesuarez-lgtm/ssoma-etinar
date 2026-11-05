@@ -1,9 +1,11 @@
+import { soloPersonalInterno } from '@/lib/acceso';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { fmtFechaHora } from '@/lib/types';
 import { modalidadLabel } from '@/lib/modalidades';
 
 export default async function InspeccionesPage({ searchParams }: { searchParams: { obra?: string } }) {
+  await soloPersonalInterno();
   const supabase = await createClient();
   let q = supabase.from('inspecciones')
     .select('*, proyectos(nombre,codigo), inspector:perfiles!inspecciones_inspector_id_fkey(nombre), hallazgos(id,estado)')
